@@ -1,0 +1,14 @@
+.env
+.env.*
+auth.json
+**/auth.json
+**/.javdb-cli/
+cookies.txt
+*.cookie
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+.mainline/
+__pycache__/
+*.pyc

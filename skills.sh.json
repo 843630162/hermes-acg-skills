@@ -1,0 +1,14 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "groupings": [
+    {
+      "title": "ACG resource search",
+      "skills": [
+        "acg-resource-search-router",
+        "acg-reverse-image-search",
+        "jav-bangou-lookup-fc2",
+        "acg-magnet-torrent-search"
+      ]
+    }
+  ]
+}
