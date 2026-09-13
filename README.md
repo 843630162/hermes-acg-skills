@@ -10,8 +10,8 @@
 
 | 文件夹 | 何时用 |
 |--------|--------|
-| [`acg-resource-search-router`](acg-resource-search-router/SKILL.md) | **主入口**。先读用户文字再搜网页；有标题/番号不要先反向搜图；二次元不搜磁；三次元才做 FC2/磁力 |
-| [`acg-reverse-image-search`](acg-reverse-image-search/SKILL.md) | 用户丢图且没有可用标题/番号时。二次元：onegai.moe → soutubot.moe → Lens → Yandex → SauceNAO → trace.moe → ascii2d |
+| [`acg-resource-search-router`](acg-resource-search-router/SKILL.md) | **主入口**。先读用户文字再搜网页；一行职员条/太碎纯字图读字搜声优或台词；整屏片尾可文字+以图；二次元不搜磁 |
+| [`acg-reverse-image-search`](acg-reverse-image-search/SKILL.md) | 无标题/番号时的反向搜图。太碎职员条先读字网页搜；Lens 必须喂 `encoded_image` |
 | [`jav-bangou-lookup-fc2`](jav-bangou-lookup-fc2/SKILL.md) | 查 JAV/FC2 番号、女优、核对 JavDB 或 FC2 官网 |
 | [`acg-magnet-torrent-search`](acg-magnet-torrent-search/SKILL.md) | 搜磁力/种子/BT。Router 默认只给三次元自动走；二次元搜图闭环不要调用，除非用户事后明确要磁力 |
 
@@ -22,17 +22,23 @@
 ## 流水线
 
 ```
-抽出文字线索 + 判定二次元 / 三次元
+抽出文字线索 + 判定二次元 / 三次元 + 太碎 / 纯字 / 是否整屏片尾
 
 有标题 / 番号 / 卖家 / 站点 / 分集？
   是 → 网页检索（HTTP 优先）
          命中 → 二次元结束（无磁链）
                 三次元 → 资料/官网核对 → 用户要磁力才搜磁
-         未命中且有图 → 反向搜图
-  否，仅有图 → 反向搜图
+         未命中且有图 → 看是否太碎/纯字；否则反向搜图
+否，一行职员条 / 太碎纯字图（不是整屏片尾）？
+  是 → 读字 → 网页搜声优或台词（不要开 Lens/SauceNAO）
+否，整屏 720p+ 片尾？
+  是 → 文字定锤，可以顺便以图碰运气
+否，仅有图且有可搜视觉 → 反向搜图
 ```
 
 浏览器：**整个任务只允许 1 次 `new_tab`**，之后用 `goto_url`；读完就走；同时最多 3 个标签。禁止循环开新标签。
+
+Google Lens：必须喂 `input[name=encoded_image]`。第一个 `input[type=file]` 是首页搜索框，喂进去只会显示「已添加 N 张图片」，不要点首页「搜索」。成功标志是 URL 出现 `vsrid=`。
 
 ---
 
@@ -91,6 +97,7 @@ hermes skills install 843630162/hermes-acg-skills/acg-resource-search-router
 | 真实作品号 | 输出示例里的具体 `FC2-PPV-…` | 用占位符 `{id}`；真实番号只出现在你自己的对话里 |
 | 「已经登录过」 | JAVHouse 等站点的本机登录状态 | 见下方浏览器登录 |
 | 搜索后端细节 | 某次环境里的 Exa keyless 失败写法 | 按你的 Hermes `web.backend` / API Key 配置 |
+| 实测职员条上的角色/声优名 | 某次用户截图里的具体字 | skill 里改成 `{角色名}` / `{声优名}` 占位；你自己搜时用 OCR 读到的原文 |
 | 本机路径、Cookie、token | 未收录 | **永远不要**写进 `SKILL.md` 或提交到 git |
 
 公开 skill 里保留的是站点域名、检索顺序和操作规则（例如分集 `…15` 与 `15,5` 不是同一部）。这些是流程，不是账号。
@@ -167,7 +174,7 @@ skill 在「有标题找番号」时会先网页检索。后端由 **Hermes 自�
 可选加强：
 
 - **SauceNAO**：在 [saucenao.com](https://saucenao.com/) 注册后可提高限额。若你要让脚本走 API，把 key 放环境变量（例如 `SAUCENAO_API_KEY`），不要写进 skill。当前 `SKILL.md` 按网页使用，无 key 也能搜。
-- **Google Lens**：若出现「图片未与账号关联」，在持久化浏览器里登录 Google 后再试；不要去操作页内 Gemini /「询问这张图片」。失败就记一笔，进入下一引擎。
+- **Google Lens**：必须喂 `input[name=encoded_image]`，不要打第一个 `input[type=file]`（那是首页搜索框，「已添加 N 张图片」= 传错了）。成功标志是 URL 出现 `vsrid=`。若出现「图片未与账号关联」，在持久化浏览器里登录 Google 后再试；不要去操作页内 Gemini。失败就记一笔，进入下一引擎。
 - 部分引擎在国内可能需要系统代理；代理账号同样只放系统或 Hermes 环境，不放 skill。
 
 ### 5. FC2 官网核对
