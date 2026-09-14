@@ -4,7 +4,14 @@
 
 本仓库只含流程模板（`SKILL.md`），**不含账号、Cookie、API Key、会话记录或真实番号**。凭据一律放在你本机，配置方法见下方。
 
-> 18+ 向。疑似未成年内容必须拒绝。技能只检索与比对，不自动开下、不批量打种。请自行遵守所在地法律与站点条款。
+## 免责声明
+
+**本仓库仅供学习、研究与技术参考，不构成法律建议，也不对任何检索结果的合法性、准确性或可用性作保证。**
+
+- 技能只描述助手如何检索与比对公开网页上的元数据/候选，**不自动下载、不批量打种、不传播盗版文件**。
+- 第三方站点内容、磁力链接、在线播放页均由使用者自行访问；请遵守所在地法律法规、著作权与各站服务条款。
+- **18+**。疑似未成年相关请求必须拒绝。
+- 因使用、配置或滥用本仓库造成的任何后果，作者与贡献者不承担责任。完整条款见 [DISCLAIMER.md](DISCLAIMER.md)。
 
 ## 包含的 skill
 
@@ -13,7 +20,7 @@
 | [`acg-resource-search-router`](acg-resource-search-router/SKILL.md) | **主入口**。先读用户文字再搜网页；一行职员条/太碎纯字图读字搜声优或台词；整屏片尾可文字+以图；二次元不搜磁 |
 | [`acg-reverse-image-search`](acg-reverse-image-search/SKILL.md) | 无标题/番号时的反向搜图。太碎职员条先读字网页搜；Lens 必须喂 `encoded_image` |
 | [`jav-bangou-lookup-fc2`](jav-bangou-lookup-fc2/SKILL.md) | 查 JAV/FC2 番号、女优、核对 JavDB 或 FC2 官网 |
-| [`acg-magnet-torrent-search`](acg-magnet-torrent-search/SKILL.md) | 搜磁力/种子/BT。Router 默认只给三次元自动走；二次元搜图闭环不要调用，除非用户事后明确要磁力 |
+| [`acg-magnet-torrent-search`](acg-magnet-torrent-search/SKILL.md) | 搜磁力/种子/BT。四源仍空则三次元可走在线视频兜底；官方预览型跳过搜磁，只做预览核对 |
 
 四个 skill 互相引用，请**全部安装**。日常丢图搜资源时优先启用 **ACG resource search router**。
 
@@ -34,6 +41,10 @@
 否，整屏 720p+ 片尾？
   是 → 文字定锤，可以顺便以图碰运气
 否，仅有图且有可搜视觉 → 反向搜图
+
+三次元且用户要磁力：javdb-cli → sukebei → OneJAV → JAVHouse
+  四源仍空 → 在线视频兜底（时长 + 预览图 + 完整/预览标注；可附同作品旧号）
+  官方预览型（FC2/DMM/Moodyz 等付费页，流站最终跳官方 embed）→ 跳过磁力与在线搜，只做预览核对
 ```
 
 浏览器：**整个任务只允许 1 次 `new_tab`**，之后用 `goto_url`；读完就走；同时最多 3 个标签。禁止循环开新标签。
@@ -94,7 +105,7 @@ hermes skills install 843630162/hermes-acg-skills/acg-resource-search-router
 | 已去掉 | 原形态（概要） | 请在本机自行配置 |
 |--------|----------------|------------------|
 | 会话 ID | 某次 FC2 检索的内部会话名 | 不需要；不要把 Hermes session 名写进 skill |
-| 真实作品号 | 输出示例里的具体 `FC2-PPV-…` | 用占位符 `{id}`；真实番号只出现在你自己的对话里 |
+| 真实作品号 | 输出示例里的具体 `FC2-PPV-…`、以及某次检索用的新旧号 | 用 `{id}` / `{旧id}` / `{新id}`；真实番号只出现在你自己的对话里 |
 | 「已经登录过」 | JAVHouse 等站点的本机登录状态 | 见下方浏览器登录 |
 | 搜索后端细节 | 某次环境里的 Exa keyless 失败写法 | 按你的 Hermes `web.backend` / API Key 配置 |
 | 实测职员条上的角色/声优名 | 某次用户截图里的具体字 | skill 里改成 `{角色名}` / `{声优名}` 占位；你自己搜时用 OCR 读到的原文 |
@@ -205,4 +216,4 @@ FC2 商品页主机固定为 `https://adult.contents.fc2.com/article/{id}/`。�
 
 ## 许可证
 
-[MIT](LICENSE)
+[MIT](LICENSE)。使用前请阅读 [免责声明](DISCLAIMER.md)。
