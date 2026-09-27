@@ -1,6 +1,6 @@
 # Hermes ACG 资源搜索 Skills
 
-给 [Hermes Agent](https://hermes-agent.nousresearch.com/) / Cursor Agent 用的四件套：**有图或关键词 → 认出作品 →（仅三次元且用户明确要求时）给磁力候选**。
+给 [Hermes Agent](https://hermes-agent.nousresearch.com/) / Cursor Agent 用的 skill 合集：**有图或关键词 → 认出作品 →（仅三次元且用户明确要求时）给磁力候选**，外加下载、新番表、图片格式等周边工具。
 
 本仓库只含流程模板（`SKILL.md`），**不含账号、Cookie、API Key、会话记录或真实番号**。凭据一律放在你本机，配置方法见下方。
 
@@ -15,14 +15,31 @@
 
 ## 包含的 skill
 
+### 核心搜索闭环（互相引用，请全部安装）
+
 | 文件夹 | 何时用 |
 |--------|--------|
 | [`acg-resource-search-router`](acg-resource-search-router/SKILL.md) | **主入口**。先读用户文字再搜网页；一行职员条/太碎纯字图读字搜声优或台词；整屏片尾可文字+以图；二次元不搜磁 |
-| [`acg-reverse-image-search`](acg-reverse-image-search/SKILL.md) | 无标题/番号时的反向搜图。太碎职员条先读字网页搜；Lens 必须喂 `encoded_image` |
-| [`jav-bangou-lookup-fc2`](jav-bangou-lookup-fc2/SKILL.md) | 查 JAV/FC2 番号、女优、核对 JavDB 或 FC2 官网 |
+| [`acg-reverse-image-search`](acg-reverse-image-search/SKILL.md) | 无标题/番号时的反向搜图。含 CF 墙应对（出口 IP → turnstile-bypass）与谷歌搜图 AI 模式；Lens 必须喂 `encoded_image` |
+| [`jav-bangou-lookup-fc2`](jav-bangou-lookup-fc2/SKILL.md) | 查 JAV/FC2 番号、女优，核对 JavDB 或 FC2 官网；社交评论区路线（Threads/X 回复帖找番号） |
 | [`acg-magnet-torrent-search`](acg-magnet-torrent-search/SKILL.md) | 搜磁力/种子/BT。四源仍空则三次元可走在线视频兜底；官方预览型跳过搜磁，只做预览核对 |
 
-四个 skill 互相引用，请**全部安装**。日常丢图搜资源时优先启用 **ACG resource search router**。
+### 扩展 skill（按需安装）
+
+| 文件夹 | 何时用 |
+|--------|--------|
+| [`jav-person-profile`](jav-person-profile/SKILL.md) | 查日本 ACG/JAV 人物档案（女优/声优/写真）：JavDB actor 优先，NotFound 降级萌娘/bangumi |
+| [`sougouwiki-series-number-table`](sougouwiki-series-number-table/SKILL.md) | 要整系列番号清单或怀疑前缀不对时，从 sougouwiki 抓全表整理号→演员名（含 references/） |
+| [`jav-number-decode`](jav-number-decode/SKILL.md) | 用户发来含隐藏番号的叙事文本：解码提取所有 JAV 番号并输出分组列表 |
+| [`acg-release-schedule`](acg-release-schedule/SKILL.md) | 某月/下月的里番新番表或发售日历、要求附图时用：Hanime1 预告抓取 + 封面拼图（含 scripts/contact_sheet.py） |
+| [`magnet-hash-aggregator-lookup`](magnet-hash-aggregator-lookup/SKILL.md) | 非 JAV 系列 / 死站资源找磁力、BT、网盘下载来源 |
+| [`jmcomic-honbako-download`](jmcomic-honbako-download/SKILL.md) | 下载禁漫天堂/JMComic 本子：插件工具搜+下；JM 没有的走 Hitomi.la |
+| [`pixiv-image-download`](pixiv-image-download/SKILL.md) | 抓 Pixiv 原图 / 动转 GIF / 按画师归档（依赖本机 pixiv-cli，见下方外部依赖） |
+| [`iwara-search`](iwara-search/SKILL.md) | 在 iwara 搜/收集视频图片、给收藏找新候选；走 api.iwara.tv，不硬刚 CF 网页 |
+| [`patreon-free-content-sites`](patreon-free-content-sites/SKILL.md) | Patreon 白嫖 / Kemono 不全时的替代源：Free Tier → 镜像 → Pawchive → Coomer |
+| [`image-format-conversion`](image-format-conversion/SKILL.md) | webp/jpg/png 本地互转，再喂 vision 模型（反搜图 skill 引用） |
+
+日常丢图搜资源时优先启用 **ACG resource search router**；其余按场景加载。
 
 三次元资料/磁力还会调用本机 `javdb` 命令。CLI 本身不在本仓库，见 [javdb-cli 配置](#1-javdb-cli三次元强烈建议)。
 
@@ -55,25 +72,28 @@ Google Lens：必须喂 `input[name=encoded_image]`。第一个 `input[type=file
 
 ## 安装
 
-把四个文件夹整目录复制到 skills 根下，保持「一 skill 一文件夹 + `SKILL.md`」。
+把需要的文件夹整目录复制到 skills 根下，保持「一 skill 一文件夹 + `SKILL.md`」。核心闭环 4 个必装；扩展 skill 按需。
 
 ### Hermes
 
-官方默认目录是 `~/.hermes/skills/`。若你改过 `HERMES_HOME`（例如 Windows 上的 `F:\Hermes`），则复制到 `$HERMES_HOME/skills/`。
+官方默认目录是 `~/.hermes/skills/`。若你改过 `HERMES_HOME`（例如 Windows 上的 `F:\Hermes`），则复制到 `$HERMES_HOME/skills/`。下文 `<HERMES_HOME>`、`<WORK_DIR>` 均指你本机的对应目录（如 `F:\Hermes-work`）。
 
 ```bash
 git clone https://github.com/843630162/hermes-acg-skills.git
 ```
 
 ```text
-# 最终应类似
+# 核心闭环（必装）
 <HERMES_HOME>/skills/acg-resource-search-router/SKILL.md
 <HERMES_HOME>/skills/acg-reverse-image-search/SKILL.md
 <HERMES_HOME>/skills/jav-bangou-lookup-fc2/SKILL.md
 <HERMES_HOME>/skills/acg-magnet-torrent-search/SKILL.md
+# 扩展（按需，含子目录的整目录复制）
+<HERMES_HOME>/skills/sougouwiki-series-number-table/   # 含 references/
+<HERMES_HOME>/skills/acg-release-schedule/             # 含 scripts/
 ```
 
-也可以按文件安装（社区源可能被安全扫描拦截，预览后再加 `--force`）：
+也可以按文件安装（社区源可能被安全扫描拦截，预览后再加 `--force`）。核心四个：
 
 ```bash
 hermes skills inspect https://raw.githubusercontent.com/843630162/hermes-acg-skills/main/acg-resource-search-router/SKILL.md
@@ -82,6 +102,8 @@ hermes skills install https://raw.githubusercontent.com/843630162/hermes-acg-ski
 hermes skills install https://raw.githubusercontent.com/843630162/hermes-acg-skills/main/jav-bangou-lookup-fc2/SKILL.md
 hermes skills install https://raw.githubusercontent.com/843630162/hermes-acg-skills/main/acg-magnet-torrent-search/SKILL.md
 ```
+
+含子目录的扩展 skill（sougouwiki-series-number-table、acg-release-schedule）建议整目录复制；其余单文件 skill 可套用上面的 `hermes skills install <raw URL>` 模式。
 
 或加为 tap 后按路径安装：
 
@@ -109,7 +131,7 @@ hermes skills install 843630162/hermes-acg-skills/acg-resource-search-router
 | 「已经登录过」 | JAVHouse 等站点的本机登录状态 | 见下方浏览器登录 |
 | 搜索后端细节 | 某次环境里的 Exa keyless 失败写法 | 按你的 Hermes `web.backend` / API Key 配置 |
 | 实测职员条上的角色/声优名 | 某次用户截图里的具体字 | skill 里改成 `{角色名}` / `{声优名}` 占位；你自己搜时用 OCR 读到的原文 |
-| 本机路径、Cookie、token | 未收录 | **永远不要**写进 `SKILL.md` 或提交到 git |
+| 本机路径、Cookie、token | 未收录 | **永远不要**写进 `SKILL.md` 或提交到 git；skill 里出现时用 `<HERMES_HOME>` / `<WORK_DIR>` 占位 |
 
 公开 skill 里保留的是站点域名、检索顺序和操作规则（例如分集 `…15` 与 `15,5` 不是同一部）。这些是流程，不是账号。
 
@@ -196,7 +218,21 @@ FC2 商品页主机固定为 `https://adult.contents.fc2.com/article/{id}/`。�
 
 不需要 FC2 账号也能做资料对比；有账号也不要把 Cookie 提交到 git。
 
-### 6. 不要提交的文件
+### 6. 外部依赖（引用其他仓库 / 本机工具）
+
+部分 skill 引用了不在本仓库的外部组件，按需安装：
+
+| 依赖 | 来源 | 被哪些 skill 引用 |
+|------|------|------------------|
+| `javdb` CLI + javdb-cli skill | [FlanChanXwO/javdb-cli](https://github.com/FlanChanXwO/javdb-cli)（Release 安装，见上方第 1 节） | acg-magnet-torrent-search、jav-bangou-lookup-fc2、acg-resource-search-router、sougouwiki-series-number-table、jav-person-profile |
+| `turnstile-bypass`（CF 墙过墙：human_click.py / cf_clearance cookie） | [Sophomoresty/turnstile-bypass](https://github.com/Sophomoresty/turnstile-bypass)（clone + `python3 scripts/install.py`，自带 .venv） | acg-reverse-image-search、iwara-search 的 CF 墙应对节 |
+| `pixiv-cli`（单文件 CLI + venv，含 gppt 登录脚本） | 本机自建：`<HERMES_HOME>/tools/pixiv-cli/`（基于 [upbit/pixivpy](https://github.com/upbit/pixivpy) + [eggplants/get-pixivpy-token](https://github.com/eggplants/get-pixivpy-token)，不随仓库分发） | pixiv-image-download |
+| `jmcomics` Hermes 插件（JMComic 下载，凭据在插件 option.yml） | 本机自建：`<HERMES_HOME>/plugins/jmcomics/`；参考 [hect0x7/JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) | jmcomic-honbako-download |
+| libwebp / ffmpeg 便携二进制 | `<HERMES_HOME>/tools/`（Google 官方预编译，BSD-3-Clause；不随仓库分发） | image-format-conversion |
+
+skill 内的相对链接（如 `../web/turnstile-bypass/SKILL.md`）指向 Hermes 本机 skills 目录布局；外部组件未安装时对应路径自动降级（skill 里已写明降级动作）。
+
+### 7. 不要提交的文件
 
 `.gitignore` 已覆盖常见机密文件。额外确认：
 

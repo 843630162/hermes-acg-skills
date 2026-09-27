@@ -86,10 +86,9 @@ description: 用户要搜磁力、种子、BT 时使用：Router 默认只在三
    - 关键词优先：`规范化番号`，其次官方/资料站标题。
 3. **OneJAV** — `https://onejav.com/search/?q=关键词`（搜索格式已验证）  
    - 真磁力/torrent 源（页面带体积 GB/MB + Torrents 标签）。番号搜不到时用**日文原标题 / 卖家名 / 女优名**再搜；适合官网下架、JavDB+sukebei 都无收录的冷门 FC2。
-4. **JAVHouse** — `https://javhouse.org/`（需登录）  
+4. **JAVHouse** — `https://javhouse.org/`（需登录，用户已手动登录过）  
    - 搜索必须用首页 POST 表单：`do=search&subaction=search&story=关键词`；URL 路径 `/search/番号` 无效会报 not found。
    - 真磁力源：详情页 `https://javhouse.org/video/<id>-<code>.html` 有 **Download Magnet**（完整 `magnet:?xt=...&tr=...`）+ **Download Torrent**。点结果里的视频链接可能跳外部广告页，要直接 goto 详情页 URL。
-   - 登录：由用户在 Hermes **持久化浏览器配置**里自行完成；不要把 Cookie、账号或密码写入 skill / 仓库。未登录则跳过本站并在输出注明。
 
 前一步已有足够优质磁链（≥1 条体积合理、非明显广告名）可结束；否则必须跑完第 4 步再下结论。仍无可用磁力时走下面「无磁力 → 在线视频兜底」，不要直接下『未找到』结论。
 
@@ -105,7 +104,7 @@ description: 用户要搜磁力、种子、BT 时使用：Router 默认只在三
 
 作品来自官方付费源——FC2 PPV（原盤送付、卖文件不挂 BT），或 moodyz.com / video.dmm.co.jp/av/ 等 AV 正版官方收费站——且其在线渠道最终都跳转到 FC2 官方播放器（`https://adult.contents.fc2.com/embed/<纯数字>`，免费约60秒预览）或该官方付费页时 → 判定为「官方预览型」：**不需要**做在线视频搜索，也**不需要**做磁力链搜索；这些站点仅在**核对最终搜索结果时**用于预览/图片对比（身份核验：番号、标题是否一致，播放器有没有跳到别的作品）。
 
-**步骤 A：按名字搜在线视频**。用日文标题中最独特的短语（从 JavDB `javdb detail <纯数字>` 的 `origin_title` / `title` 取；避开「中出し」「素人」这类通用词）做 web_search / 各站站内搜索；可用 **番号**、**女优名/扮演者名**、**作品名** 三种关键词交叉。FC2 号在 JavDB 只输纯数字（如 `javdb detail 1234567`），整串 `FC2-PPV-xxxxx` 会假阴性。
+**步骤 A：按名字搜在线视频**。用日文标题中最独特的短语（从 JavDB `javdb detail <纯数字>` 的 `origin_title` / `title` 取；避开「中出し」「素人」这类通用词）做 web_search / 各站站内搜索；可用 **番号**、**女优名/扮演者名**、**作品名** 三种关键词交叉。FC2 号在 JavDB 只输纯数字（如 `javdb detail <纯数字id>`），整串 `FC2-PPV-xxxxx` 会假阴性。
 
 **步骤 B：已验证的在线视频源（2026-09 实测）**
 
@@ -119,7 +118,7 @@ description: 用户要搜磁力、种子、BT 时使用：Router 默认只在三
 
 注意：这些流站静态 HTML 常无 `<video>` 标签（JS 懒加载）；要拿时长/确认可播放时，用 browser_exec 打开页面滚动或点播放后读 `video.duration`。
 
-**步骤 C：返回视频时长 + 区分预览/完整版（输出硬性要求）**
+**步骤 C：返回视频时长 + 区分预览/完整版（用户硬性要求）**
 - 必须给出 **视频时长**；只找到预览片段时明确标注「预览」并附可得的时长。
 - 打不开链接不要直接丢弃：检查该页标题、播放器加载后是否跳转到其他作品的预览页（embed 可能载入别的片）；用页面 title 里的番号/标题与目标核对身份一致后才交付。
 

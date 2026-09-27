@@ -51,13 +51,24 @@ description: 用户要 Hermes 式资源闭环（有图/关键词搜资源）时�
 
 ## 浏览器与抓取卫生（全程强制）
 
-不要循环 `new_tab` 翻页、也不要开完标签不关：标签会无限堆积，任务走不完。
+某次 FC2 检索会话曾在浏览器里循环 `new_tab` 翻页、从不关标签，导致标签无限堆积、任务走不完。禁止再这样。
 
 1. **静态页优先 HTTP**：`curl` / `web_extract` 拉 HTML。JavDB、FC2 article、镜像标题页、TM 搜索页能 curl 就不要开浏览器。
 2. **必须浏览器时**：整个任务 **只允许 1 次** `new_tab(url)`；之后一律 `goto_url(url)`。翻页、换查询、换站点都用 `goto_url`，**禁止 `for` 循环里 `new_tab`**。
 3. **读完就走**：摘完标题/番号/时长后立刻 `goto_url` 下一地址，或 `cdp("Target.closeTarget", targetId=...)` 关掉当前页。同时打开的标签不超过 **3**；超出先关已摘完的。
 4. **不要操作 Lens / Gemini 页内输入框**（MCP 填不进去会空转）。Lens 只看视觉匹配；上传必须喂 `input[name=encoded_image]`，不要打第一个 `input[type=file]`。做不到就跳过并写明。
-5. **web_search 失败** → 立刻改 curl / DuckDuckGo HTML，不要为了「搜一下」连开几十个标签。网页搜索后端与 API Key 见仓库 README「本地配置」。
+5. **web_search 失败**（如 Exa keyless）→ 立刻改 curl/DuckDuckGo HTML，不要为了「搜一下」连开几十个标签。
+6. **agent Chrome 实例全机最多 3 个**（主代理 + 所有子代理合计；识别特征：命令行带 `--user-data-dir=<HERMES_HOME>/chrome-profile`）。派并行子代理各开浏览器前，先数现有 agent 实例（`Get-CimInstance Win32_Process -Filter "name='chrome.exe'" | ? CommandLine -like '*chrome-profile*'`），超了先协调/停掉再开。锁住或卡死时**先用父进程链查占用方**是主代理还是哪个子代理，多沟通确认归属再处理；**绝不杀用户日常 Chrome**（不带 `--user-data-dir` 参数的那个）。
+7. **CF 墙先于引擎**：搜图链上 onegai / soutubot / SauceNAO / trace.moe / ascii2d / avscan.cc 全在 Cloudflare 边缘，撞「Just a moment」/403+cloudflare 时按 [ACG reverse image search](acg-reverse-image-search) 的「CF 墙应对」走：先查出口 IP（v2rayN/singbox TUN、数据中心 vs 住宅），仍撞再调 turnstile-bypass 的 human_click.py；多引擎同撞 = 出口问题，换节点重跑整链。
+
+## 并行子代理分工（编号/水印线索 + 画面特征同时可用时）
+
+有 IPPA/EPPA 号等厂牌级水印、且画面有明确可搜特征（制服类型、场景、发型等）时，**派两个子代理并行分工**：
+
+- **子代理 A（编号+特征路径）**：IPPA 号 → ippa-member.info 查厂牌组/年代窗口 → `javdb search <画面主题词>` 在目录里命中具体作品；必要时多镜像文字佐证。
+- **子代理 B（反搜图路径）**：按 [ACG reverse image search](acg-reverse-image-search) 跑 avscan / Lens / Yandex，只输出候选列表 + 缩略图证据，不拉磁力。
+
+两个都完成后合并交叉验证：同指一部 → 高置信直接定锤；冲突时以编号+特征佐证优先（厂牌级注册号是硬证据），再视觉核验一次后定锤。派并行子代理前按「浏览器与抓取卫生」第 6 条先数现有 agent Chrome 实例（全机最多 3 个）。
 
 ## 第 0 步：先用用户文字
 
@@ -72,9 +83,9 @@ description: 用户要 Hermes 式资源闭环（有图/关键词搜资源）时�
 
 图本身也要先看一眼（已附带的视觉描述即可，不必为了分流再开一遍浏览器）。像素是启发式，不是硬阈值：
 
-- **太碎**：最短边 < ~100px，或高度只有几十～一百多的细横条（例：约 340×80、数 KB 的一行职员条）。读字，不要搜图。
+- **太碎**：最短边 < ~100px，或高度只有几十～一百多的细横条（例：342×83 一行职员条）。读字，不要搜图。
 - **纯字图**：删掉字以后没辨识度（没脸/立绘/道具，弱纹理底 + 字）。读字走 ①′。
-- **职员条**：「角色名　声优名」这种 → 搜声优/角色表，不要 SauceNAO。
+- **职员条**：「{角色名}　{声优名}」这种 → 搜声优/角色表，不要 SauceNAO。
 - **整屏 1080p 片尾**：文字定锤 + 可以顺便以图碰运气。
 - 压过的整帧、角色清楚 → 即使文件很小也仍可搜图。
 - 细则见 [ACG reverse image search](acg-reverse-image-search) 的「第 0 步前」。
@@ -92,6 +103,14 @@ description: 用户要 Hermes 式资源闭环（有图/关键词搜资源）时�
 二次元有番名/作者名：先网页/Bangumi/VNDB，不要先 SauceNAO。
 
 命中后：二次元 → ④；三次元 → 按番号 skill 做官网/资料核对；**默认不搜磁**，除非用户明确要磁力。
+
+**IPPA / EPPA 编号水印（画面带 `IPPA No.XXXXXX` / `EPPA No.XXXXXX`）**：
+
+1. IPPA 号是 **厂牌级**注册号，不是作品级——只能定位 **厂牌组 + 年代窗口**，不能直接定到具体哪一部。
+2. web_search `IPPA No.<编号> ippa-member` → 打开 `https://ippa-member.info/?p=NNN` 对应页，取厂牌清单（例：ヒロスンエンタテインメント系 = SUN / DANDY / COSMOS PICTURES / ひよこ）+ 注册窗口（例：2022.03–2023.03）。
+3. 结合画面特征关键词，用 `javdb search <主题词>` 在该厂牌组对应年代的目录里直接命中具体作品（实测「駅員」一次命中 SUN-080）；也可 `javdb code <前缀>` / `javdb maker <厂牌>` 拉目录后按年代+题材过滤。
+4. xsz-av / avjb 等站的搜索页是关键词匹配，拿 IPPA 号搜基本返回噪音（标题含 "No" 的随机视频），不要依赖。
+5. 定位到具体番号后 → 交 [JAV bangou lookup FC2](jav-bangou-lookup-fc2) 核对；用户要磁力再走 ③，否则 ④。
 
 ## ② 反向搜图（仅无可用文字，或 ①′ 未命中）
 
@@ -130,6 +149,7 @@ description: 用户要 Hermes 式资源闭环（有图/关键词搜资源）时�
 | 情况 | 动作 |
 |------|------|
 | 有标题/番号（无论有没有图） | ①′ → 命中则跳过搜图 |
+| 水印带 IPPA/EPPA 编号 | ①′ IPPA 法（ippa-member.info → 厂牌组/年代 → javdb 主题词）；有画面特征时走并行子代理分工 |
 | 一行职员条 / 太碎纯字图 | 读字 → ①′ 搜声优或台词；不要 ② |
 | 整屏 1080p 片尾 | ①′ 文字定锤，可加 ② 碰运气 |
 | 仅有图（有可搜视觉） | ② |
@@ -148,3 +168,4 @@ description: 用户要 Hermes 式资源闭环（有图/关键词搜资源）时�
 - 不要用图搜低置信号覆盖标题钉死的番号。
 - 不伪造 magnet；不把镜相当 FC2 官网（主机仅 `adult.contents.fc2.com`）。
 - 三次元搜磁力不要跳过 javdb-cli 直接上 sukebei/网页源；只有 CLI 不可用或 JavDB 结果不足才降级，且须在输出注明。
+- 拿 IPPA/EPPA 号依赖 xsz-av / avjb 关键词搜索页定位（噪音大）；厂牌级注册号走 ippa-member.info + javdb 主题词路径。

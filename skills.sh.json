@@ -2,12 +2,27 @@
   "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
   "groupings": [
     {
-      "title": "ACG resource search",
+      "title": "ACG resource search (core)",
       "skills": [
         "acg-resource-search-router",
         "acg-reverse-image-search",
         "jav-bangou-lookup-fc2",
         "acg-magnet-torrent-search"
+      ]
+    },
+    {
+      "title": "ACG extras (optional)",
+      "skills": [
+        "jav-person-profile",
+        "sougouwiki-series-number-table",
+        "jav-number-decode",
+        "acg-release-schedule",
+        "magnet-hash-aggregator-lookup",
+        "jmcomic-honbako-download",
+        "pixiv-image-download",
+        "iwara-search",
+        "patreon-free-content-sites",
+        "image-format-conversion"
       ]
     }
   ]
