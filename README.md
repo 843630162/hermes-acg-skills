@@ -232,15 +232,6 @@ FC2 商品页主机固定为 `https://adult.contents.fc2.com/article/{id}/`。�
 
 skill 内的相对链接（如 `../web/turnstile-bypass/SKILL.md`）指向 Hermes 本机 skills 目录布局；外部组件未安装时对应路径自动降级（skill 里已写明降级动作）。
 
-### 7. 不要提交的文件
-
-`.gitignore` 已覆盖常见机密文件。额外确认：
-
-- `~/.javdb-cli/auth.json`
-- Hermes `auth.json`、`.env`、`config.yaml` 里的 Key 与本地模型地址
-- 浏览器 Cookie / `cookies.txt`
-- 含真实番号、会话 dump、用户截图的对话日志
-
 ---
 
 ## 使用提示
