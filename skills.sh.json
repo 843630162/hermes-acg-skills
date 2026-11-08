@@ -22,7 +22,9 @@
         "pixiv-image-download",
         "iwara-search",
         "patreon-free-content-sites",
-        "image-format-conversion"
+        "image-format-conversion",
+        "laowang-cli",
+        "web-image-hunt"
       ]
     }
   ]

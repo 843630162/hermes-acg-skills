@@ -30,10 +30,10 @@ metadata:
    - WebP → PNG: `dwebp.exe -o out.png in.webp`
    - WebP → real JPEG: `ffmpeg -y -i in.webp -q:v 2 out.jpg`
    - PNG/JPEG → WebP: `cwebp.exe -q 85 in.png -o out.webp`
-4. Verify with `file <out>` — the magic bytes must say what you asked for (a .jpg that reports "PNG image data" is a dwebp artifact, not a JPEG).
+4. Verify magic bytes with `file` at BOTH ends: the input first (extensions lie — a `.png` may hold JPEG bytes; pick the pipeline by the actual bytes), then the output, which must say what you asked for (a .jpg that reports "PNG image data" is a dwebp artifact, not a JPEG).
 
 ## Pitfalls
 
 - dwebp.exe always writes PNG pixel data regardless of output extension; `-o x.jpg` produces PNG-in-.jpg. Use ffmpeg when the container must actually be JPEG.
-- Native Windows .exe binaries called from git-bash need native paths (`F:\...`), not MSYS paths (`/f/...`) — pass `cygpath -m "$p"`; MSYS path translation is disabled in this environment, so `/f/Hermes/...` fails with "cannot open input file".
-- If a needed tool is missing from `<HERMES_HOME>/tools`, download the official prebuilt binary there (e.g. libwebp from `https://storage.googleapis.com/downloads.webmproject.org/releases/webp/`) instead of installing to C: or the session working dir.
+- Native Windows .exe binaries called from git-bash need native paths (`F:\...`), not MSYS paths (`/f/...`) — pass `cygpath -m "$p"`; MSYS path translation is disabled in this environment, so `<HERMES_HOME>/...` fails with "cannot open input file".
+- If a needed tool is missing from `<HERMES_HOME>\tools`, download the official prebuilt binary there (e.g. libwebp from `https://storage.googleapis.com/downloads.webmproject.org/releases/webp/`) instead of installing to C: or the session working dir.

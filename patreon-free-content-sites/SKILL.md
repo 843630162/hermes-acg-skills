@@ -26,6 +26,17 @@ description: "Patreon 白嫖/Kemono 不全：Free Tier→镜像→Pawchive→Coo
 
 **检索动作**：直接按创作者名搜（先 Kemono → 缺了 Pawchive → 再 Coomer），不要一次只查一个站就下结论。
 
+### Unifans / Fansky（作者同时挂这两家时）
+2026-10 实测（Lumii/qingshuang1234 任务）：Kemono.cr 和 Pawchive **都不收录** Unifans/Fansky 平台——别在归档站白找。gallery-dl 也没有 Unifans extractor（issue #6638 open，仓库无 `unif*` 文件）。可行路子：
+- **Unifans API 匿名端点**：`api.unifans.io` 的 `getPostsDetail` 带已知 post ID 可不登录调通；但 `searchNickDomainName`、`creator/*` 系列全部 410（要 login token）。所以只有能拿到具体 post ID 时才有用，没有公开枚举方法。
+- **主流出血源 = VikaCG（维咔 vikacg.com）资源区**：中文圈把 Unifans/Fansky 完整版做成「无修」帖 + 夸克/UC 网盘。搜法见下条。
+
+### VikaCG 搜索的正确姿势（2026-10 实测）
+维咔是 Next.js RSC 应用，网页端**搜索结果不渲染帖子链接**：DOM 里 `a[href*="/p/"]` 恒为 0；RSC fetch（`_rsc=1` + Accept: text/x-component）返回的流也不含内联结果；裸 curl JSON API 报「非法的客户端」。可靠路：**翻上传者的全部动态**——先从一个已知帖拿到上传者 `/u/<id>`，然后 `page=N` 逐页（每页约 60 条，空 posts 即终止）本地按关键词过滤。Camoufox 打开即可过 CF。
+
+### 网盘交付约定（用户规矩）
+夸克/UC/阿里云盘分享**只给 share URL + 提取码**，不要去 API 探直链或实际拉文件到本地。UC 分享页 title 会带文件名（如「爱弥斯.mp4 - UC网盘分享」），curl 一下就能确认内容存在 + 大小，够用了。
+
 ## 第 2 步：有活跃订阅时——importer 自传
 
 Kemono / Pawchive 都提供 importer（登录自己的订阅账号把帖子导进去）。这是覆盖最全的路子：

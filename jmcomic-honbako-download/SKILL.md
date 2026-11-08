@@ -18,10 +18,10 @@ description: "Use when 用户要下载禁漫天堂/JMComic 本子：插件工具
 - **验收分辨率**：PIL 抽查每张图宽度（正文页应 ≥1000px），别只信下载成功或文件大小——内容简单的全尺寸页可能才几 KB。
 
 ## 基础设施（已装好，勿重装）
-- Hermes 插件 `jmcomics`：位于 `<HERMES_HOME>/plugins/jmcomics/`（plugin.yaml + __init__.py + option.yml），已在 `<HERMES_HOME>/config.yaml` 的 `plugins.enabled` 里启用。
-- jmcomic 库装在 Hermes 主 venv（jmcomic 2.7.x，Python 3.11）。
-- 凭据在插件目录 `option.yml`（login 插件自动登录；账号/密码只写在本机 option.yml，**不要提交进仓库**），下载根目录 `dir_rule.base_dir: <工作盘>/downloads/jmcomic/`。
-- 参考源码：GitHub hect0x7/JMComic-Crawler-Python；独立 venv（含 jmcomic）可作备用解释器。
+- Hermes 插件 `jmcomics`：位于 `<HERMES_HOME>/plugins/jmcomics/`（plugin.yaml + __init__.py + option.yml），已在 `<HERMES_HOME>\config.yaml` 的 `plugins.enabled` 里启用。
+- jmcomic 库装在 Hermes 主 venv：`<HERMES_HOME>/hermes-agent/venv`（jmcomic 2.7.x，Python 3.11）。
+- 凭据在插件目录 `option.yml`（login 插件自动登录；账号/密码只写在本机 option.yml，**不要提交进仓库**），下载根目录 `dir_rule.base_dir: <WORK_DIR>/downloads/jmcomic/`。
+- 源码仓库备份：`<HERMES_HOME>/tools/JMComic-Crawler-Python`（GitHub hect0x7/JMComic-Crawler-Python）；独立 venv `<HERMES_HOME>/jmcomic-venv` 也可用（含 jmcomic，备用）。
 
 ## 正常流程（插件工具可用时）
 会话里直接调两个工具：
@@ -32,16 +32,27 @@ description: "Use when 用户要下载禁漫天堂/JMComic 本子：插件工具
 ## 工具不可用时（新会话未加载插件 / 工具没出现）
 直接用主 venv python 跑，等价于插件逻辑：
 ```bash
-# <HERMES_HOME>/hermes-agent/venv 里的 python（Windows: .../Scripts/python.exe；Linux/macOS: bin/python3）
-python - <<'PY'
+<HERMES_HOME>/hermes-agent/venv/Scripts/python.exe - <<'PY'
 import importlib.util, time
-spec = importlib.util.spec_from_file_location('jm', r'<HERMES_HOME>\plugins\jmcomics\__init__.py')  # Linux/macOS 用正斜杠
+spec = importlib.util.spec_from_file_location('jm', r'<HERMES_HOME>\plugins\jmcomics\__init__.py')
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 print(m._handle_search({'query':'关键词','kind':'site'}))   # 搜索
 # print(m._handle_download({'ids':['车号']}))                 # 下载整本
 PY
 ```
 首次调用会先登录（约3秒），之后 option/client 有缓存。
+
+### 直连 client（查详情 / 页数 / 翻页检索）
+插件模块**没有** `_get_client`；自己建 client 读元数据：
+```python
+import jmcomic
+option = jmcomic.create_option(r'<HERMES_HOME>\plugins\jmcomics\option.yml')
+client = option.build_jm_client()
+album = client.get_album_detail(aid)               # .title / .authors / .tags / .description
+photo = client.get_photo_detail(album[0].photo_id, False)
+print(len(photo))                                  # 页数
+client.search_site(search_query='終末地', page=1)    # .total / .content[(aid, info)]
+```
 
 ## Pitfalls（全部踩过）
 - **不要用 `jmcomic.api.download_album/download_photo`**：它进 jm_task_context，退出时等 after_album 插件收尾，在只有 login 插件的 option 下会挂死（实测卡 >7 分钟）。用 `new_downloader(option)` 上下文管理器直接调 `dler.download_album(id)` / `dler.download_photo(pid)`（2 秒完成）。
@@ -50,6 +61,9 @@ PY
 - 搜索走 api 端（impl: api），域名自动更新（cdnhjk.net 等）；登录失败先看 option.yml 里 username/password 是否还是当前账号。
 - 车号是纯数字 id；搜索结果里的 `147xxxx` 都是车号，可直接下。同名多版本时优先选带汉化组名、章节多的那条。
 - 下载目录在 F 盘（遵守用户禁 C 盘规则）；webp 原图不解码，要 PDF/长图可在 option.yml plugins.after_album 加 zip/img2pdf 插件（需 `pip install jmcomic[plugins]` 到主 venv）。
+- **站点搜索单字恒返 0**：`search_site('祀')` = 0 条，至少两字；多关键词用空格拼（`終末地 祀` 才有 93 条）。
+- **`search_tag` 是子串模糊匹配**，复合 tag（`スー(エンドフィールド)`）会炸出 `スーパー…` / `スープ` 一堆噪音；按 tag 精确找本子不可靠，用标题关键词搜。
+- **`page=2` 可能返回与第 1 页完全相同的结果**（total 也不变），别据此判断「就这么多」。`web_search` 直接搜 `18comic.vip` / `wnacg.com` 标题能绕过这种分页噪声。
 
 ## JM 没有的本子 → Hitomi.la（商业连载/单行本）
 - 搜索端点：`https://hitomi.la/search.html?` + encodeURIComponent(关键词)（旧 `/advsearch/`、api.hitomi.la 都失效了）。结果页 `/manga/<slug>-<id>.html`，ID 就是 reader 用的数字 id。

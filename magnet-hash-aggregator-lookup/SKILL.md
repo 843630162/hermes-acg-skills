@@ -50,6 +50,12 @@ For forum-based origins (Discuz etc.), enumerate `thread-*` URLs via CDX and pul
 - ciligou 各域 DoH：clg.im / ciligou.net / cilibao.app/.top/.in A=104.224.157.58；`www.*` 多无记录——直连一律用裸域 + `--resolve host:443:104.224.157.58`。
 - 导航站卡片会换目标域（bs5.org 的 /site/N 卡里列当前有效域名），**每次以导航页现取的 URL 为准**，别把旧镜像写死进流程。
 
+### 5c. 无磁力 / 死种兜底：老王论坛网盘与种子分流（laowang-cli）
+
+当非 JAV 系列、打包合集或死站资源在公开磁力聚合器中无磁力链或全部死种时，调用 [laowang-cli](laowang-cli) 在老王论坛（`laowang.vip`）搜索网盘或种子分流：
+- 搜索命令：`laowang search "<关键词>"`（可按题材加 `--forum 53` 特别福利、`--forum 727` 其他网盘资源、`--forum 47` 亚洲套图下载区、`--forum 51` 欧美套图下载区）。
+- 读帖提取：`laowang thread <tid>`，免扣币提取帖内百度/夸克/PikPak/123pan 网盘链接（含自动 `jnpar_pansell:check` 验活）、`remote_play` 免费 `m3u8`/`.torrent`，或 dry-run 预览付费附件/资源卡（未经用户明确同意严禁加 `--confirm` 购买）。
+
 ### 6. Deliverable shape
 Per source: name/series | magnet or URL | size/file count | last-active date | aggregator domain | status (live / flaky / dead→archive). Close with a one-line reachability summary of every candidate site probed, and which sub-series have evidence vs none.
 
@@ -63,8 +69,9 @@ Per source: name/series | magnet or URL | size/file count | last-active date | a
 - **browser_exec `js()` async loops over many URLs exceed the daemon's evaluate window and time out.** Do one in-page fetch per call, or navigate (`new_tab`/`goto_url`) and read DOM; batch multi-site probes into a few small chunks instead of one giant loop. (Single `fetch` inside `js()` is safe.)
 - **GBK-encoded legacy forum pages must be iconv'd before any regex** — searching the raw bytes for thread titles silently fails.
 - **Wayback CDX concurrency >4 gets throttled** (Remote end closed); 2–4 parallel + earlier-timestamp retry is the working pattern. A "Temporarily Offline" HTML page from web.archive.org = transient, back off and re-query.
-- Do not fabricate hashes or last-active dates; every number in the deliverable comes from a fetch you ran (same rule as dead-site-resource-recovery).
+- Do not fabricate hashes or last-active dates; every number in the deliverable comes from a fetch you ran (same rule as the dead-site recovery playbook).
 
 ## Relation to other skills
 - JAV bangou / FC2 driven → [acg-magnet-torrent-search](acg-magnet-torrent-search) + javdb-cli first.
-- Entry point is a **dead site domain** and the goal is recovering its content/files → [dead-site-resource-recovery](dead-site-resource-recovery); this skill covers the *magnet/source-hunt* side of such tasks (its aggregator step overlaps: chihuhub/btbtt/磁力狗 for seed status).
+- Entry point is a **dead site domain** and the goal is recovering its content/files → `dead-site-resource-recovery`（本机私有 skill，未随仓库发布）; this skill covers the *magnet/source-hunt* side of such tasks (its aggregator step overlaps: chihuhub/btbtt/磁力狗 for seed status).
+- 公开磁力聚合器无磁力或死种，需找论坛网盘/种子分流 → [laowang-cli](laowang-cli)（在老王论坛 `laowang.vip` 搜索 `--forum 53` 特别福利、`--forum 727` 其他网盘资源、`--forum 47`/`51` 套图下载区等板块，并用 `laowang thread <tid>` 提取网盘或种子）。

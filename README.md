@@ -19,10 +19,10 @@
 
 | 文件夹 | 何时用 |
 |--------|--------|
-| [`acg-resource-search-router`](acg-resource-search-router/SKILL.md) | **主入口**。先读用户文字再搜网页；一行职员条/太碎纯字图读字搜声优或台词；整屏片尾可文字+以图；二次元不搜磁 |
-| [`acg-reverse-image-search`](acg-reverse-image-search/SKILL.md) | 无标题/番号时的反向搜图。含 CF 墙应对（出口 IP → turnstile-bypass）与谷歌搜图 AI 模式；Lens 必须喂 `encoded_image` |
-| [`jav-bangou-lookup-fc2`](jav-bangou-lookup-fc2/SKILL.md) | 查 JAV/FC2 番号、女优，核对 JavDB 或 FC2 官网；社交评论区路线（Threads/X 回复帖找番号） |
-| [`acg-magnet-torrent-search`](acg-magnet-torrent-search/SKILL.md) | 搜磁力/种子/BT。四源仍空则三次元可走在线视频兜底；官方预览型跳过搜磁，只做预览核对 |
+| [`acg-resource-search-router`](acg-resource-search-router/SKILL.md) | **主入口**。先读用户文字再搜网页；一行职员条/太碎纯字图读字搜声优或台词；整屏片尾可文字+以图；二次元不搜磁。含**否定结论闸门**（说「没有」之前先自检管道）与网盘签名链接分支；`references/` 收套图/网盘转存/Getchu·同人/社交溯源四类配方 |
+| [`acg-reverse-image-search`](acg-reverse-image-search/SKILL.md) | 无标题/番号时的反向搜图。先跑**纯标准库 HTTP 探针**（`scripts/soutu_http_probe.py`：yandex / soutubot / saucenao / ascii2d / safebooru），浏览器只做兜底；含 CF 墙应对、谷歌搜图 AI 模式、Lens `encoded_image`、本子单格页级定位、视频帧与 X 传播溯源 |
+| [`jav-bangou-lookup-fc2`](jav-bangou-lookup-fc2/SKILL.md) | 查 JAV/FC2 番号、女优，核对 JavDB 或 FC2 官网；社交评论区路线；**预览图标准做法**（`scripts/preview_grid.py` 官方样张拼图）、FC2 批量「磁力+预览」、番号假阳性判定 |
+| [`acg-magnet-torrent-search`](acg-magnet-torrent-search/SKILL.md) | 搜磁力/种子/BT。**带对照词自检的 sukebei 检索**（`scripts/sukebei_search.py`，防把坏管道当「零命中」）；四源仍空则三次元走在线视频兜底；韩国 AV 捷径；无磁力时老王论坛分流兜底 |
 
 ### 扩展 skill（按需安装）
 
@@ -38,6 +38,8 @@
 | [`iwara-search`](iwara-search/SKILL.md) | 在 iwara 搜/收集视频图片、给收藏找新候选；走 api.iwara.tv，不硬刚 CF 网页 |
 | [`patreon-free-content-sites`](patreon-free-content-sites/SKILL.md) | Patreon 白嫖 / Kemono 不全时的替代源：Free Tier → 镜像 → Pawchive → Coomer |
 | [`image-format-conversion`](image-format-conversion/SKILL.md) | webp/jpg/png 本地互转，再喂 vision 模型（反搜图 skill 引用） |
+| [`laowang-cli`](laowang-cli/SKILL.md) | 老王论坛（`laowang.vip`）检索：帖内网盘 / 磁力 / `m3u8` / 种子分流，付费卡 dry-run 预览；核心三 skill 的「无磁力」兜底（含 `scripts/`、`references/`） |
+| [`web-image-hunt`](web-image-hunt/SKILL.md) | 无图、只给文字要某组图（版本特典/宣传图/角色外观）：文字定项 → 按源优先级抓图 → md5 剔占位 + vision 核验 |
 
 日常丢图搜资源时优先启用 **ACG resource search router**；其余按场景加载。
 
@@ -66,13 +68,17 @@
 
 浏览器：**整个任务只允许 1 次 `new_tab`**，之后用 `goto_url`；读完就走；同时最多 3 个标签。禁止循环开新标签。
 
+**否定结论闸门**：任何「没有 / 全空 / 查不到」之前必须自检管道——检索参数是否被站点忽略（回读搜索框）、解析正则是否对上当前页面、对照词是否命中。管道坏了只能报「管道故障」，不能报「无资源」。
+
+**网盘签名链接**：用户丢夸克/百度/UC/迅雷分享链问「这是啥 / 还有效吗」→ 走 router 的 `references/pan-share-link-recovery.md`，只给分享链 + 提取码与元信息，不代为转存。
+
 Google Lens：必须喂 `input[name=encoded_image]`。第一个 `input[type=file]` 是首页搜索框，喂进去只会显示「已添加 N 张图片」，不要点首页「搜索」。成功标志是 URL 出现 `vsrid=`。
 
 ---
 
 ## 安装
 
-把需要的文件夹整目录复制到 skills 根下，保持「一 skill 一文件夹 + `SKILL.md`」。核心闭环 4 个必装；扩展 skill 按需。
+把需要的文件夹整目录复制到 skills 根下，保持「一 skill 一文件夹 + `SKILL.md`」。核心闭环 4 个必装；扩展 skill 按需。**核心 4 个现在都带 `references/`（部分带 `scripts/`），必须整目录复制**——只装 `SKILL.md` 会丢配方与脚本。
 
 ### Hermes
 
@@ -83,17 +89,18 @@ git clone https://github.com/843630162/hermes-acg-skills.git
 ```
 
 ```text
-# 核心闭环（必装）
-<HERMES_HOME>/skills/acg-resource-search-router/SKILL.md
-<HERMES_HOME>/skills/acg-reverse-image-search/SKILL.md
-<HERMES_HOME>/skills/jav-bangou-lookup-fc2/SKILL.md
-<HERMES_HOME>/skills/acg-magnet-torrent-search/SKILL.md
+# 核心闭环（必装，整目录复制：SKILL.md + references/ + scripts/）
+<HERMES_HOME>/skills/acg-resource-search-router/
+<HERMES_HOME>/skills/acg-reverse-image-search/
+<HERMES_HOME>/skills/jav-bangou-lookup-fc2/
+<HERMES_HOME>/skills/acg-magnet-torrent-search/
 # 扩展（按需，含子目录的整目录复制）
 <HERMES_HOME>/skills/sougouwiki-series-number-table/   # 含 references/
 <HERMES_HOME>/skills/acg-release-schedule/             # 含 scripts/
+<HERMES_HOME>/skills/laowang-cli/                      # 含 scripts/ + references/
 ```
 
-也可以按文件安装（社区源可能被安全扫描拦截，预览后再加 `--force`）。核心四个：
+也可以按文件安装（社区源可能被安全扫描拦截，预览后再加 `--force`）。这种方式**只拉 `SKILL.md`**，不带 `references/` 与 `scripts/`——适合先看看内容，正式用请走整目录复制。核心四个：
 
 ```bash
 hermes skills inspect https://raw.githubusercontent.com/843630162/hermes-acg-skills/main/acg-resource-search-router/SKILL.md
@@ -103,7 +110,7 @@ hermes skills install https://raw.githubusercontent.com/843630162/hermes-acg-ski
 hermes skills install https://raw.githubusercontent.com/843630162/hermes-acg-skills/main/acg-magnet-torrent-search/SKILL.md
 ```
 
-含子目录的扩展 skill（sougouwiki-series-number-table、acg-release-schedule）建议整目录复制；其余单文件 skill 可套用上面的 `hermes skills install <raw URL>` 模式。
+含子目录的 skill（核心 4 个、sougouwiki-series-number-table、acg-release-schedule、laowang-cli、iwara-search）建议整目录复制；单文件 skill 可套用上面的 `hermes skills install <raw URL>` 模式。
 
 或加为 tap 后按路径安装：
 
@@ -132,6 +139,7 @@ hermes skills install 843630162/hermes-acg-skills/acg-resource-search-router
 | 搜索后端细节 | 某次环境里的 Exa keyless 失败写法 | 按你的 Hermes `web.backend` / API Key 配置 |
 | 实测职员条上的角色/声优名 | 某次用户截图里的具体字 | skill 里改成 `{角色名}` / `{声优名}` 占位；你自己搜时用 OCR 读到的原文 |
 | 本机路径、Cookie、token | 未收录 | **永远不要**写进 `SKILL.md` 或提交到 git；skill 里出现时用 `<HERMES_HOME>` / `<WORK_DIR>` 占位 |
+| 账号名 / 邮箱 / vault id / 本机命令入口 | 某插件的登录账号、某站 vault 条目 ID、某 CLI 的安装路径 | 只写在本机 `config.json` / 密码库 / `option.yml`；skill 里写「凭据只在本机，不要提交进仓库」 |
 
 公开 skill 里保留的是站点域名、检索顺序和操作规则（例如分集 `…15` 与 `15,5` 不是同一部）。这些是流程，不是账号。
 
@@ -229,8 +237,11 @@ FC2 商品页主机固定为 `https://adult.contents.fc2.com/article/{id}/`。�
 | `pixiv-cli`（单文件 CLI + venv，含 gppt 登录脚本） | 本机自建：`<HERMES_HOME>/tools/pixiv-cli/`（基于 [upbit/pixivpy](https://github.com/upbit/pixivpy) + [eggplants/get-pixivpy-token](https://github.com/eggplants/get-pixivpy-token)，不随仓库分发） | pixiv-image-download |
 | `jmcomics` Hermes 插件（JMComic 下载，凭据在插件 option.yml） | 本机自建：`<HERMES_HOME>/plugins/jmcomics/`；参考 [hect0x7/JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) | jmcomic-honbako-download |
 | libwebp / ffmpeg 便携二进制 | `<HERMES_HOME>/tools/`（Google 官方预编译，BSD-3-Clause；不随仓库分发） | image-format-conversion |
+| `laowang` 命令（老王论坛 CLI 入口） | `<HERMES_HOME>/bin/laowang`（薄 bash 壳）→ `<HERMES_HOME>/tools/laowang-cli/laowang.py`；skill 内 `scripts/laowang.py` 是同一份代码的备份 | laowang-cli |
 
 skill 内的相对链接（如 `../web/turnstile-bypass/SKILL.md`）指向 Hermes 本机 skills 目录布局；外部组件未安装时对应路径自动降级（skill 里已写明降级动作）。turnstile-bypass 装上表的 fork 版——上游没有 `scripts/human_click.py`，CF 墙应对节引用的就是它。
+
+还有几处引用指向**本机私有 skill、未随本仓库发布**（`bokep-indo-folder-sites`、`qqbot-media-delivery`、`dead-site-resource-recovery`）：仓库里已把它们降级成纯文本提及，没装就跳过对应分支，不影响主链。
 
 ---
 

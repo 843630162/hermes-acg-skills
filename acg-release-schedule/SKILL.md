@@ -30,7 +30,7 @@ related_skills: [acg-resource-search-router]
 - 做带标签 contact sheet PNG 网格（每格封面 + 日期 + 标题），**发前用 vision_analyze 验一遍**：无破图/空白格、文字不重叠不溢出，再 `MEDIA:` 交付。直接甩一堆散装 jpg 不如一张总览图。
 - Pillow 不在系统 `py` 里；用 Hermes venv 解释器 `<HERMES_HOME>/hermes-agent/venv/Scripts/python.exe`（自带 PIL）。拼图脚本见本 skill `scripts/contact_sheet.py`：
   ```bash
-  "<HERMES_HOME>/hermes-agent/venv/Scripts/python.exe" <skill_dir>/scripts/contact_sheet.py items.json --title "2026年9月 里番新番" --out F:\\Hermes-work\\rihan_2026-09.png
+  "<HERMES_HOME>/hermes-agent/venv/Scripts/python.exe" <skill_dir>/scripts/contact_sheet.py items.json --title "2026年9月 里番新番" --out <WORK_DIR>/rihan_2026-09.png
   ```
   `items.json`：`[{"id":"...","date":"9月4日","title":"...","image":"cov_xxx.jpg"}, ...]`（本地路径或 http url）。
 - 交付物存 <WORK_DIR>；任务结束删掉临时目录（封面、html dump），只留总结/拼图。

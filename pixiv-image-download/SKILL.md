@@ -5,7 +5,7 @@ description: Use when 用户要抓/下 Pixiv 图片（原图、动转 GIF）。C
 
 # Pixiv 抓图 CLI
 
-用户要「下载 Pixiv 图片 / 抓原图 / 动图转 GIF / 按画师归档」时用这套。已有现成 CLI：`<HERMES_HOME>/tools/pixiv-cli/pixiv.py`（单文件，~670 行），venv 在同目录 `.venv/Scripts/python.exe`（Linux/macOS 为 `.venv/bin/python3`）。
+用户要「下载 Pixiv 图片 / 抓原图 / 动图转 GIF / 按画师归档」时用这套。已有现成 CLI：`<HERMES_HOME>\tools\pixiv-cli\pixiv.py`（单文件，~670 行），venv 在同目录 `.venv/Scripts/python.exe`。
 
 ## 方案选型结论（为什么不用现成库）
 - **主库**：`upbit/pixivpy`（PyPI: `pixivpy3`，2.1k★，v3.7.x）。只封装 API 调用，不含下载/动图逻辑——所以自己包一层 CLI。
@@ -22,7 +22,7 @@ $PY pixiv.py search "初音ミク" -n 3          # 标签搜索（列出 id）
 $PY pixiv.py illust <id...> --download      # 指定作品下载
 $PY pixiv.py user <uid> -n 10 --download    # 某画师最近 N 张
 ```
-输出默认存 `<WORK_DIR>/pixiv-downloads`，按 `画师/标题_编号/{id}_{页}.jpg|page_N.gif` 归档；每目录附 `meta.json`（标签、作者、URL）。
+输出默认存 `<WORK_DIR>\pixiv-downloads`，按 `画师/标题_编号/{id}_{页}.jpg|page_N.gif` 归档；每目录附 `meta.json`（标签、作者、URL）。
 
 ## R-18 / 关注列表搜图（App API 没有 r18 参数）
 `illust_ranking(mode)` 与 `search_illust()` 都**不接受 r18/content kwarg**（传了直接 TypeError），榜单默认全年龄。找 R-18：
@@ -50,7 +50,44 @@ cd <HERMES_HOME>/tools/pixiv-cli && rm -f .tokens.json
 5. **动图帧数据在 `api.ugoira_metadata(id)`**：返回 `ugoira_metadata.zip_urls`(如 `{medium: url}`，多页时 value 是 list) + `frames`(`[{file,delay}]`)。zip 下载后按 frames 合成 GIF（Pillow）。若 `original_image_url` 指向的是封面 jpg 而非 zip（前 2 字节非 `PK`），直接存图兜底。
 6. **App API search/ranking/detail 都需 token**，无 token 返回 400。先确保 `.tokens.json` 存在。
 
+## 取元数据 / 验源 / AI 标记（不用下载图也能做）
+
+用户丢 Pixiv 链接或 id 问「这是哪来的 / 谁画的 / 是不是 AI」时，用同一个 venv 直接拉 detail，比开浏览器快：
+
+```python
+import json
+from pixivpy3 import AppPixivAPI
+tok = json.load(open(".tokens.json", encoding="utf-8"))
+api = AppPixivAPI(); api.set_auth(tok["access_token"], tok.get("refresh_token"))
+i = api.illust_detail(<id>).get("illust") or {}
+# title / user.name / user.id / create_date / x_restrict(1=R-18) / page_count
+# tags[].name / caption / total_view / illust_ai_type / meta_single_page.original_image_url
+```
+
+- **必须 `AppPixivAPI()` 空构造 + `set_auth(access_token, refresh_token)`**：`AppPixivAPI(access_token=...)` 会报 `Authentication required!`（pixivpy3 3.7 实测）。
+- **`illust_ai_type` 是 Pixiv 官方 AI 标记**：实测手描き作品（色紙/卡通风）= `1`，AI 生成作品 = `2`。问「是不是 AI」时这是唯一硬证据，比画风/文字崩坏可靠。`search_illust` 也有 `search_ai_type` 参数。
+- **标签搜索会漏作品**：实测某作者（东方 R-18、标题全为「无题」）的 3 个作品，在 `十六夜咲夜` / `博麗霊夢` / `極上の女体` 三个标签的 `sort="date_desc"` 前 300～1200 条里**全部找不到**（换 `search_ai_type=0/1`、加 `start_date/end_date` 也没有），但 `user_illusts(uid)` 一次就返回其最近 30 张。原因：作者把作品设成「不在 Pixiv 搜索/排行榜显示」（或 AI 作品不进 App 搜索）。**所以按角色标签找新作要在网页端做；App API 只适合已知 id 或已知 uid。**
+- **验源用像素差，不要靠 vision 说「相似」**：下原图后 `ImageChops.difference(a, b)` 算各通道 mean abs diff（从 `d.histogram()` 算，不用逐像素）。实测同一张图（用户 jpg vs `i.pximg.net/img-original/...png`）= **2.64/255**，尺寸完全一致（832×1216）。<5 = 同一张；几十 = 只是相似。
+- 用户给的图与 `img-original` **同尺寸**时它就不是裁切图（之前我误判成「从更大页裁出来的」）；只有当分格线/气泡在图边被截断且尺寸小于原图时才是裁切。
+
+## 网页端标签搜索（登录态，比 App API 更接近用户看到的页面）
+
+真实端点（从 Pixiv 页面 `performance.getEntriesByType('resource')` 里抓出来的；自己猜的 `/search/illust?word=` 会 404）：
+
+```bash
+curl -b <jar> "https://www.pixiv.net/ajax/search/artworks/%E5%8D%81%E5%85%AD%E5%A4%9C%E5%92%B2%E5%A4%9C?order=date_d&mode=all&p=1&ai_type=0&csw=0&s_mode=s_tag_full&ratio=&lang=zh"
+```
+
+- 结果在 `body.illustManga.data`（每页 60 条，另有 `total`、`lastPage`）；**id 字段叫 `id`，不是 `illustId`**（写成 `illustId` 全是 `undefined`，会把「没搜到」误判出来）。同条目里有 `title / xRestrict / illustType / userId / userName / pixivId / pageCount / tags`。
+- 排序只认 `order=date_d`（新着）或人气序；`order=date_desc` 直接 400。`ai_type=0/1` 实测无差别，AI 作品（illustType=2）本来就在结果里。
+- 查登录是否生效：`goto_url("https://www.pixiv.net/")` 后看头部 `a[href="/logout"]` 与 `a[href*="/users/<uid>"]`。`/api/user/info`、`/mypage` 这两个探测路径不可靠（一个返回 HTML、一个 404）；`performance.getEntriesByType('resource')` 里的 GA 参数 `uid=…`、`ep.login=yes` 也能确认登录态。
+
+## 浏览器登录 Pixiv（vault）
+
+密码库里有 `accounts.pixiv.net` 的登录条目（`browser_vault action=list` 找 handle，identifier 是 pixiv ID），且它跟 `.tokens.json` 里是同一个 uid——浏览器登录通了，网页端就可用。流程：`goto_url("https://accounts.pixiv.net/login?lang=zh")` → `fill_input("input[type=text]", <pixiv ID>)` → `browser_vault action=fill handle=...`（填密码，origin 必须匹配 accounts.pixiv.net）→ 点「登录」。**坑：Pixiv 登录页有 reCAPTCHA Enterprise（anchor iframe 约 304×78）**，`click_at_xy` 点勾选框常常不生效，会卡在「请进行reCAPTCHA验证。」——这种留给用户在可见窗口里点一下，不要反复重试。CLI 路线（`.tokens.json`）不需要浏览器登录，优先用它。
+
 ## 验证下载是否真成功
+
 下完用 Pillow 打开确认：静态原图应是 1200px 级大尺寸（非缩略），动图 `page_*.gif` 的 `im.n_frames>1`。只写了 meta.json、没有图片文件 = 失败。
 
 ## 拼图预览交付坑
