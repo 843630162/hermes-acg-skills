@@ -29,7 +29,6 @@
 | 文件夹 | 何时用 |
 |--------|--------|
 | [`jav-person-profile`](jav-person-profile/SKILL.md) | 查日本 ACG/JAV 人物档案（女优/声优/写真）：JavDB actor 优先，NotFound 降级萌娘/bangumi |
-| [`sougouwiki-series-number-table`](sougouwiki-series-number-table/SKILL.md) | 要整系列番号清单或怀疑前缀不对时，从 sougouwiki 抓全表整理号→演员名（含 references/） |
 | [`jav-number-decode`](jav-number-decode/SKILL.md) | 用户发来含隐藏番号的叙事文本：解码提取所有 JAV 番号并输出分组列表 |
 | [`acg-release-schedule`](acg-release-schedule/SKILL.md) | 某月/下月的里番新番表或发售日历、要求附图时用：Hanime1 预告抓取 + 封面拼图（含 scripts/contact_sheet.py） |
 | [`magnet-hash-aggregator-lookup`](magnet-hash-aggregator-lookup/SKILL.md) | 非 JAV 系列 / 死站资源找磁力、BT、网盘下载来源 |
@@ -95,7 +94,6 @@ git clone https://github.com/843630162/hermes-acg-skills.git
 <HERMES_HOME>/skills/jav-bangou-lookup-fc2/
 <HERMES_HOME>/skills/acg-magnet-torrent-search/
 # 扩展（按需，含子目录的整目录复制）
-<HERMES_HOME>/skills/sougouwiki-series-number-table/   # 含 references/
 <HERMES_HOME>/skills/acg-release-schedule/             # 含 scripts/
 <HERMES_HOME>/skills/laowang-cli/                      # 含 scripts/ + references/
 ```
@@ -110,7 +108,7 @@ hermes skills install https://raw.githubusercontent.com/843630162/hermes-acg-ski
 hermes skills install https://raw.githubusercontent.com/843630162/hermes-acg-skills/main/acg-magnet-torrent-search/SKILL.md
 ```
 
-含子目录的 skill（核心 4 个、sougouwiki-series-number-table、acg-release-schedule、laowang-cli、iwara-search）建议整目录复制；单文件 skill 可套用上面的 `hermes skills install <raw URL>` 模式。
+含子目录的 skill（核心 4 个、acg-release-schedule、laowang-cli、iwara-search）建议整目录复制；单文件 skill 可套用上面的 `hermes skills install <raw URL>` 模式。
 
 或加为 tap 后按路径安装：
 
@@ -232,7 +230,7 @@ FC2 商品页主机固定为 `https://adult.contents.fc2.com/article/{id}/`。�
 
 | 依赖 | 来源 | 被哪些 skill 引用 |
 |------|------|------------------|
-| `javdb` CLI + javdb-cli skill | [FlanChanXwO/javdb-cli](https://github.com/FlanChanXwO/javdb-cli)（Release 安装，见上方第 1 节） | acg-magnet-torrent-search、jav-bangou-lookup-fc2、acg-resource-search-router、sougouwiki-series-number-table、jav-person-profile |
+| `javdb` CLI + javdb-cli skill | [FlanChanXwO/javdb-cli](https://github.com/FlanChanXwO/javdb-cli)（Release 安装，见上方第 1 节） | acg-magnet-torrent-search、jav-bangou-lookup-fc2、acg-resource-search-router、jav-person-profile |
 | `turnstile-bypass`（CF 墙过墙：human_click.py / cf_clearance cookie） | [843630162/turnstile-bypass](https://github.com/843630162/turnstile-bypass)（[Sophomoresty/turnstile-bypass](https://github.com/Sophomoresty/turnstile-bypass) 的 fork，**补了 `scripts/human_click.py` 与实战教训**；clone + `python3 scripts/install.py`，自带 .venv） | acg-reverse-image-search、iwara-search 的 CF 墙应对节 |
 | `pixiv-cli`（单文件 CLI + venv，含 gppt 登录脚本） | 本机自建：`<HERMES_HOME>/tools/pixiv-cli/`（基于 [upbit/pixivpy](https://github.com/upbit/pixivpy) + [eggplants/get-pixivpy-token](https://github.com/eggplants/get-pixivpy-token)，不随仓库分发） | pixiv-image-download |
 | `jmcomics` Hermes 插件（JMComic 下载，凭据在插件 option.yml） | 本机自建：`<HERMES_HOME>/plugins/jmcomics/`；参考 [hect0x7/JMComic-Crawler-Python](https://github.com/hect0x7/JMComic-Crawler-Python) | jmcomic-honbako-download |
